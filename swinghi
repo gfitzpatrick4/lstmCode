@@ -1,0 +1,86 @@
+"""
+this script tests the momentum stragety with lumnibot
+"""
+
+# importing the trader class
+from lumibot.traders import Trader
+# importing the alpaca broker class
+from lumibot.brokers import Alpaca
+
+from datetime import datetime
+
+from lumibot.backtesting import YahooDataBacktesting
+from lumibot.brokers import Alpaca
+from lumibot.strategies.strategy import Strategy
+from lumibot.traders import Trader
+
+ALPACA_CONFIG = {
+    # Put your own Alpaca key here:
+    "API_KEY": "PK3Q7LTBDWU9EB4WEBGD",
+    # Put your own Alpaca secret here:
+    "API_SECRET": "6Nwfkq65pFAGrykYO841EkeYdwavHIbFam3ObQMk",
+    # If you want to go live, you must change this. It is currently set for paper trading
+    "ENDPOINT": "https://paper-api.alpaca.markets"
+}
+class SwingHigh(Strategy):
+    data = []
+    order_number = 0
+    def initialize(self):
+        self.sleeptime = "5S"
+
+
+    def on_trading_iteration(self):
+    symbol = "TSLA"
+    entry_price = self.get_last_price(symbol)
+    self.log_message(f"Position: {self.get_position(symbol)}")
+    self.data.append(self.get_last_price(symbol))
+
+    if len(self.data) > 3:
+        temp = self.data[-3:]
+        print(self.get_position(symbol))
+        print(self.data[-1])
+        print(entry_price)
+        print(entry_price * 0.995)
+        print(entry_price * 1.0005)
+        if temp[-1] > temp[1] > temp[0]:
+            self.log_message(f"Last 3 prints: {temp}")
+            order = self.create_order(symbol, quantity=100, side="buy")
+            self.submit_order(order)
+            self.order_number += 1
+            if self.order_number == 1:
+                self.log_message(f"Entry price: {temp[-1]}")
+                entry_price = temp[-1]  # filled price
+
+        position = self.get_position(symbol)
+        if position is not None:
+            current_price = self.get_last_price(symbol)
+            profit_percentage = (current_price - entry_price) / entry_price * 100
+
+            # Check for the stop-loss condition (loss of more than 5%)
+            if profit_percentage < -5:
+                loss_amount = (entry_price - current_price) * position.quantity
+                print(f"Stop Loss Triggered! Loss Amount: {loss_amount}")
+                order = self.create_order(symbol, quantity=position.quantity, side="sell")
+                self.submit_order(order)
+                self.sell_all()
+                self.order_number = 0
+            # Check for the 0.05% profit-taking condition
+            elif profit_percentage >= 0.05:
+                profit_amount = (current_price - entry_price) * position.quantity
+                print(f"Profit Taking Triggered! Profit Amount: {profit_amount}")
+                order = self.create_order(symbol, quantity=position.quantity, side="sell")
+                self.submit_order(order)
+                self.sell_all()
+                self.order_number = 0
+
+
+    def before_market_closes(self):
+        self.sell_all()
+
+
+if __name__ == "__main__":
+    broker = Alpaca(ALPACA_CONFIG)
+    strategy = SwingHigh(broker=broker)
+    trader = Trader()
+    trader.add_strategy(strategy)
+    trader.run_all()
