@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
         subset = dataframe[dataframe["presentation_roles"].apply(contains_keyword)]
         print(f"\n=== {keyword.title()} ===")
-        print(subset[["element", "value", "label"]].head())
+        print(subset[["element", "value", "label"]])
 
     _print_section("balance")
     _print_section("cash flow")
