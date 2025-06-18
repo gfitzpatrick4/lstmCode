@@ -248,7 +248,12 @@ def _parse_xsd_order(xsd_xml: str) -> List[str]:
 
 
 def reconstruct_dataframe(xbrl_xml: str, xsd_xml: str) -> pd.DataFrame:
-    """Return a ``DataFrame`` of numeric facts ordered according to ``xsd_xml``."""
+    """Return a ``DataFrame`` of numeric facts ordered according to the taxonomy.
+
+    The function first attempts to order facts using ``presentationArc`` ``order``
+    attributes from the taxonomy's presentation linkbase. If no ordering is
+    available for a fact, its relative position in ``xsd_xml`` is used as a
+    fallback."""
     facts = extract_numeric_facts(xbrl_xml)
     df = pd.DataFrame(facts)
     if df.empty:
@@ -308,11 +313,34 @@ def reconstruct_dataframe(xbrl_xml: str, xsd_xml: str) -> pd.DataFrame:
         lambda roles_list: [roles.get(r.split("#")[-1], r) for r in roles_list] if isinstance(roles_list, list) else roles_list
     )
 
-    order = _parse_xsd_order(xsd_xml)
-    order_index = {name: idx for idx, name in enumerate(order)}
-    df["order"] = df["element"].map(order_index)
-    df.sort_values("order", inplace=True)
-    df.drop(columns="order", inplace=True)
+    # Determine ordering using presentation arcs when available so that the
+    # resulting dataframe reflects the taxonomy's defined statement order.
+    order_index: Dict[str, float] = {}
+
+    # First, use the ``order`` attribute from presentation linkbase arcs.
+    pres_arcs = linkbases.get("presentation", [])
+    for arc in pres_arcs:
+        child = arc.get("to")
+        if not child:
+            continue
+        order_str = arc.get("order")
+        try:
+            ord_val = float(order_str) if order_str is not None else None
+        except ValueError:
+            ord_val = None
+        if ord_val is not None:
+            if child not in order_index or ord_val < order_index[child]:
+                order_index[child] = ord_val
+
+    # Fallback to the XSD element order for any remaining elements
+    xsd_order = _parse_xsd_order(xsd_xml)
+    fallback_start = max(order_index.values(), default=-1) + 1
+    for idx, name in enumerate(xsd_order):
+        order_index.setdefault(name, fallback_start + idx)
+
+    df["_order"] = df["element"].map(order_index)
+    df.sort_values("_order", inplace=True)
+    df.drop(columns="_order", inplace=True)
     df.reset_index(drop=True, inplace=True)
     return df
 
