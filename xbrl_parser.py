@@ -1,5 +1,7 @@
 
+
 from typing import List, Dict, Any, Set, Optional
+
 from lxml import etree
 import pandas as pd
 
@@ -93,9 +95,11 @@ def _parse_label_linkbase(xsd_xml: str) -> Dict[str, str]:
 
     for lb in root.findall(".//link:labelLink", namespaces=ns):
         loc_map = {
+
             loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
                 loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
             )
+
             for loc in lb.findall("link:loc", namespaces=ns)
         }
         resources = {
@@ -123,9 +127,11 @@ def _parse_reference_linkbase(xsd_xml: str) -> Dict[str, List[str]]:
 
     for ref_link in root.findall(".//link:referenceLink", namespaces=ns):
         loc_map = {
+
             loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
                 loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
             )
+
             for loc in ref_link.findall("link:loc", namespaces=ns)
         }
         resources = {
@@ -167,6 +173,7 @@ def _parse_arcs(root: etree._Element, link_name: str, arc_name: str) -> List[Dic
             loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
                 loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
             )
+
             for loc in link.findall("link:loc", namespaces=ns)
         }
         for arc in link.findall(f"link:{arc_name}", namespaces=ns):

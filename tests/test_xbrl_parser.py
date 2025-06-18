@@ -1,6 +1,7 @@
 import os
 import sys
 
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from xbrl_parser import parse_xbrl_files
@@ -37,6 +38,7 @@ if __name__ == "__main__":
         subset = dataframe[dataframe["presentation_roles"].apply(contains_keyword)]
         print(f"\n=== {keyword.title()} ===")
         print(subset[["element", "value", "label"]].head())
+
 
     _print_section("balance")
     _print_section("cash flow")
