@@ -1,7 +1,7 @@
+
 from typing import List, Tuple, Dict
 from lxml import etree
 import pandas as pd
-
 
 
 def extract_numeric_facts(xbrl_xml: str) -> List[Dict[str, str]]:
