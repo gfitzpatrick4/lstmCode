@@ -1,7 +1,20 @@
 
-from typing import List, Dict, Any, Set
+
+from typing import List, Dict, Any, Set, Optional
+
 from lxml import etree
 import pandas as pd
+
+
+def _strip_prefix(name: Optional[str]) -> Optional[str]:
+    """Return local element name without namespace prefix."""
+    if not name:
+        return name
+    if "_" in name:
+        return name.split("_", 1)[1]
+    if ":" in name:
+        return name.split(":", 1)[1]
+    return name
 
 
 def extract_numeric_facts(xbrl_xml: str) -> List[Dict[str, str]]:
@@ -82,7 +95,11 @@ def _parse_label_linkbase(xsd_xml: str) -> Dict[str, str]:
 
     for lb in root.findall(".//link:labelLink", namespaces=ns):
         loc_map = {
-            loc.get("{http://www.w3.org/1999/xlink}label"): loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
+
+            loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
+                loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
+            )
+
             for loc in lb.findall("link:loc", namespaces=ns)
         }
         resources = {
@@ -110,7 +127,11 @@ def _parse_reference_linkbase(xsd_xml: str) -> Dict[str, List[str]]:
 
     for ref_link in root.findall(".//link:referenceLink", namespaces=ns):
         loc_map = {
-            loc.get("{http://www.w3.org/1999/xlink}label"): loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
+
+            loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
+                loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
+            )
+
             for loc in ref_link.findall("link:loc", namespaces=ns)
         }
         resources = {
@@ -149,7 +170,10 @@ def _parse_arcs(root: etree._Element, link_name: str, arc_name: str) -> List[Dic
     for link in root.findall(f".//link:{link_name}", namespaces=ns):
         role = link.get("{http://www.w3.org/1999/xlink}role")
         loc_map = {
-            loc.get("{http://www.w3.org/1999/xlink}label"): loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
+            loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
+                loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
+            )
+
             for loc in link.findall("link:loc", namespaces=ns)
         }
         for arc in link.findall(f"link:{arc_name}", namespaces=ns):
