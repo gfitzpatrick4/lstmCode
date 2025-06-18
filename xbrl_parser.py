@@ -1,5 +1,5 @@
 
-from typing import List, Tuple, Dict
+from typing import List, Dict
 from lxml import etree
 import pandas as pd
 
