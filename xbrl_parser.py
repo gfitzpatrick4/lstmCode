@@ -1,5 +1,6 @@
 
 from typing import List, Dict, Any, Set, Optional
+
 from lxml import etree
 import pandas as pd
 
@@ -93,6 +94,7 @@ def _parse_label_linkbase(xsd_xml: str) -> Dict[str, str]:
 
     for lb in root.findall(".//link:labelLink", namespaces=ns):
         loc_map = {
+
             loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
                 loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
             )
@@ -123,9 +125,11 @@ def _parse_reference_linkbase(xsd_xml: str) -> Dict[str, List[str]]:
 
     for ref_link in root.findall(".//link:referenceLink", namespaces=ns):
         loc_map = {
+
             loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
                 loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
             )
+
             for loc in ref_link.findall("link:loc", namespaces=ns)
         }
         resources = {
@@ -142,19 +146,25 @@ def _parse_reference_linkbase(xsd_xml: str) -> Dict[str, List[str]]:
 
 
 def _parse_roles(xsd_xml: str) -> Dict[str, str]:
+
     """Return mapping of role identifiers/URIs to definition strings."""
+
     ns = {"link": "http://www.xbrl.org/2003/linkbase"}
     root = etree.fromstring(xsd_xml.encode("utf-8"))
     roles: Dict[str, str] = {}
     for rt in root.findall('.//link:roleType', namespaces=ns):
         role_id = rt.get('id')
+
         role_uri = rt.get('roleURI')
+
         def_el = rt.find('link:definition', namespaces=ns)
         definition = ''.join(def_el.itertext()).strip() if def_el is not None else ''
         if role_id:
             roles[role_id] = definition
+
         if role_uri:
             roles[role_uri] = definition
+
     return roles
 
 
@@ -170,6 +180,7 @@ def _parse_arcs(root: etree._Element, link_name: str, arc_name: str) -> List[Dic
             loc.get("{http://www.w3.org/1999/xlink}label"): _strip_prefix(
                 loc.get("{http://www.w3.org/1999/xlink}href").split("#")[-1]
             )
+
             for loc in link.findall("link:loc", namespaces=ns)
         }
         for arc in link.findall(f"link:{arc_name}", namespaces=ns):
