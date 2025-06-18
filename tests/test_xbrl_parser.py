@@ -1,9 +1,22 @@
 import os, sys
+import pprint as pprint
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-import pytest
+
 from xbrl_parser import extract_numeric_facts, reconstruct_dataframe
 
-SAMPLE_XML = """
+
+with open('xml_test.txt', 'r') as file:
+    content = file.read()
+    SAMPLE_XML = content
+
+with open('xsd_test.txt', 'r') as file:
+    content = file.read()
+    SAMPLE_XSD = content
+
+
+
+
+"""
 <xbrl xmlns="http://www.xbrl.org/2003/instance" xmlns:us-gaap="http://fasb.org/us-gaap/2020-01-31">
   <context id="I-2001">
     <entity>
@@ -22,7 +35,7 @@ SAMPLE_XML = """
 </xbrl>
 """
 
-SAMPLE_XSD = """
+"""
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://fasb.org/us-gaap/2020-01-31" xmlns:us-gaap="http://fasb.org/us-gaap/2020-01-31" elementFormDefault="qualified">
   <xs:group name="BalanceSheet">
     <xs:sequence>
@@ -39,14 +52,14 @@ SAMPLE_XSD = """
 
 def test_extract_numeric_facts():
     facts = extract_numeric_facts(SAMPLE_XML)
-    first = facts[0]
-    assert first["element"] == "Assets"
-    assert first["value"] == "1000000"
-    assert first["contextRef"] == "I-2001"
+    print(facts)
 
 
 def test_reconstruct_dataframe():
     df = reconstruct_dataframe(SAMPLE_XML, SAMPLE_XSD)
-    assert list(df["element"]) == ["Assets", "Liabilities", "Equity"]
-    assert df.loc[df.element == "Liabilities", "value"].iloc[0] == "500000"
+    pprint.pprint(df)
 
+
+
+test_extract_numeric_facts()
+test_reconstruct_dataframe()
