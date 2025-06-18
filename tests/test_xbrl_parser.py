@@ -1,65 +1,38 @@
-import os, sys
-import pprint as pprint
+import os
+import sys
+
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from xbrl_parser import extract_numeric_facts, reconstruct_dataframe
+from xbrl_parser import parse_xbrl_files
 
 
-with open('xml_test.txt', 'r') as file:
-    content = file.read()
-    SAMPLE_XML = content
-
-with open('xsd_test.txt', 'r') as file:
-    content = file.read()
-    SAMPLE_XSD = content
-
-
-
-
-"""
-<xbrl xmlns="http://www.xbrl.org/2003/instance" xmlns:us-gaap="http://fasb.org/us-gaap/2020-01-31">
-  <context id="I-2001">
-    <entity>
-      <identifier scheme="http://www.sec.gov/CIK">0000320193</identifier>
-    </entity>
-    <period>
-      <instant>2023-06-30</instant>
-    </period>
-  </context>
-  <unit id="U-Monetary">
-    <measure>iso4217:USD</measure>
-  </unit>
-  <us-gaap:Assets contextRef="I-2001" unitRef="U-Monetary">1000000</us-gaap:Assets>
-  <us-gaap:Liabilities contextRef="I-2001" unitRef="U-Monetary">500000</us-gaap:Liabilities>
-  <us-gaap:Equity contextRef="I-2001" unitRef="U-Monetary">500000</us-gaap:Equity>
-</xbrl>
-"""
-
-"""
-<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://fasb.org/us-gaap/2020-01-31" xmlns:us-gaap="http://fasb.org/us-gaap/2020-01-31" elementFormDefault="qualified">
-  <xs:group name="BalanceSheet">
-    <xs:sequence>
-      <xs:element ref="us-gaap:Assets"/>
-      <xs:element ref="us-gaap:Liabilities"/>
-      <xs:element ref="us-gaap:Equity"/>
-    </xs:sequence>
-  </xs:group>
-  <xs:element name="Assets" type="xs:decimal"/>
-  <xs:element name="Liabilities" type="xs:decimal"/>
-  <xs:element name="Equity" type="xs:decimal"/>
-</xs:schema>
-"""
-
-def test_extract_numeric_facts():
-    facts = extract_numeric_facts(SAMPLE_XML)
-    print(facts)
+def test_parse_xbrl_files():
+    df = parse_xbrl_files("tests/xml_test.txt", "tests/xsd_test.txt")
+    assert not df.empty
+    assert {
+        "label",
+        "footnotes",
+        "references",
+        "presentation_parents",
+        "calculation_parents",
+        "definition_parents",
+        "presentation_roles",
+        "calculation_roles",
+        "definition_roles",
+    }.issubset(df.columns)
+    assert df["footnotes"].dropna().astype(bool).any()
 
 
-def test_reconstruct_dataframe():
-    df = reconstruct_dataframe(SAMPLE_XML, SAMPLE_XSD)
-    pprint.pprint(df)
+if __name__ == "__main__":
+    dataframe = parse_xbrl_files("tests/xml_test.txt", "tests/xsd_test.txt")
 
+    def _print_section(keyword: str) -> None:
+        subset = dataframe[dataframe["presentation_roles"].apply(
+            lambda roles: any(keyword.lower() in (r or "").lower() for r in (roles or []))
+        )]
+        print(f"\n=== {keyword.title()} ===")
+        print(subset[["element", "value", "label"]].head())
 
-
-test_extract_numeric_facts()
-test_reconstruct_dataframe()
+    _print_section("balance")
+    _print_section("cash flow")
+    _print_section("income")
